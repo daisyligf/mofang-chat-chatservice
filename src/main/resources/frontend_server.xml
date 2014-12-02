@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<server>
+	<items>
+		<item>
+			<host>127.0.0.1</host>
+			<port>2001</port>
+			<req_url>http://localhost:2001/user/prohibit</req_url>
+			<max_total>100</max_total>
+			<charset>utf-8</charset>
+			<conn_timeout>30000</conn_timeout>
+			<socket_timeout>30000</socket_timeout>
+			<keepalive_timeout>30000</keepalive_timeout>
+			<check_idle_initial_delay>5000</check_idle_initial_delay>
+			<check_idle_period>5000</check_idle_period>
+			<close_idle_timeout>30000</close_idle_timeout>
+		</item>
+	</items>
+</server>

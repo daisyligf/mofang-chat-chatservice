@@ -1,0 +1,43 @@
+2014-10-13 15:15:58 | chatservice.info | INFO  |5591 | SendRoomMessageAction | 0 | request={
+    "act" : "send_room_message", 
+    "rid" : 1,
+    "content" : "北京国安",
+    "msg_type" : 1,
+    "from_uid" : 1111,
+    "font_color" : "#ffffff" 
+  }&response={"code":0,"act":"send_room_message_response"}
+2014-10-13 15:19:03 | chatservice.info | INFO  |4706 | SendRoomMessageAction | 0 | request={
+    "act" : "send_room_message", 
+    "rid" : 1,
+    "content" : "山东鲁能",
+    "msg_type" : 1,
+    "from_uid" : 1111,
+    "font_color" : "#ffffff" 
+  }&response={"code":0,"act":"send_room_message_response"}
+2014-10-13 15:20:26 | chatservice.info | INFO  |338 | SendRoomMessageAction | 0 | request={
+    "act" : "send_room_message", 
+    "rid" : 1,
+    "content" : "山东鲁能",
+    "msg_type" : 1,
+    "from_uid" : 1111,
+    "font_color" : "#ffffff" 
+  }&response={"code":0,"act":"send_room_message_response"}
+2014-10-13 15:27:31 | chatservice.info | INFO  |306 | PushSysMessageNotifyAction | 0 | request={
+   "act" : "push_sys_msg",
+   "uid_list" : [
+        608598
+   ],                          
+   "msg" : 
+   {
+   	"msg_type" : 1, 
+   	"msg_category" : "del_post",
+   	"content" :
+   	{
+   		"title" : "测试ICON系统通知",
+      "detail" : "哈哈哈哈哈",
+      "icon" : "http://www.baidu.com/icon/milo.icon"
+   	}
+   },
+   "is_show_notify" : true,
+   "click_act" : "http://share.mofang.com/guild?id=1" 
+}&response={"code":0,"act":"push_sys_msg_response"}
