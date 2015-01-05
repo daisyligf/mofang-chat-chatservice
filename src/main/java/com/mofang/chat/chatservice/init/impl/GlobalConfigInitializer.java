@@ -36,5 +36,10 @@ public class GlobalConfigInitializer extends AbstractInitializer
 		GlobalConfig.PUSH_QUEUE_CONFIG_PATH = config.get("conf", "push_queue_config_path");
 		GlobalConfig.LOG4J_CONFIG_PATH = config.get("conf", "log4j_config_path");
 		GlobalConfig.FESERVER_CONFIG_PATH = config.get("conf", "feserver_config_path");
+		GlobalConfig.HTTP_CLIENT_CONFIG_PATH = config.get("conf", "http_client_config_path");
+		
+		GlobalConfig.USER_AUTH_URL = config.get("api", "user_auth_url");
+		GlobalConfig.USER_INFO_URL = config.get("api", "user_info_url");
+		GlobalConfig.ALLOW_SEND_URL = config.get("api", "allow_send_url");
 	}
 }

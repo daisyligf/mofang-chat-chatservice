@@ -346,7 +346,11 @@ public class NotifyLogicImpl implements NotifyLogic
 			long pageSize = json.optLong("size", 10L);
 			long start = (pageNum - 1) * pageSize;
 			
-			JSONArray data = new JSONArray();
+			JSONObject data = new JSONObject();
+			///获取通知总数
+			long total = postReplyNotifyService.getCount(userId);
+			data.put("total", total);
+			JSONArray arrList = new JSONArray();
 			JSONObject item = null;
 			List<PostReplyNotify> notifies = postReplyNotifyService.getList(userId, start, pageSize);
 			if(null != notifies && notifies.size() > 0)
@@ -389,9 +393,10 @@ public class NotifyLogicImpl implements NotifyLogic
 					contentJson.put("reply_user", userJson);
 					item.put("content", contentJson);
 					item.put("status", notify.getStatus());
-					data.put(item);
+					arrList.put(item);
 				}
 			}
+			data.put("list", arrList);
 			result.setCode(ReturnCode.SUCCESS);
 			result.setData(data);
 			return result;
@@ -433,7 +438,11 @@ public class NotifyLogicImpl implements NotifyLogic
 			long pageSize = json.optLong("size", 10L);
 			long start = (pageNum - 1) * pageSize;
 			
-			JSONArray data = new JSONArray();
+			JSONObject data = new JSONObject();
+			///获取通知总数
+			long total = sysMessageNotifyService.getCount(userId);
+			data.put("total", total);
+			JSONArray arrList = new JSONArray();
 			JSONObject item = null;
 			List<SysMessageNotify> notifies = sysMessageNotifyService.getList(userId, start, pageSize);
 			if(null != notifies && notifies.size() > 0)
@@ -459,9 +468,10 @@ public class NotifyLogicImpl implements NotifyLogic
 					item.put("content", contentJson);
 					item.put("click_act", notify.getClickAction());
 					item.put("status", notify.getStatus());
-					data.put(item);
+					arrList.put(item);
 				}
 			}
+			data.put("list", arrList);
 			result.setCode(ReturnCode.SUCCESS);
 			result.setData(data);
 			return result;

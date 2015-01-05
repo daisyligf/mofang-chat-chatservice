@@ -29,6 +29,11 @@ public class GlobalObjectInitializer extends AbstractInitializer
 		SysObject.initWriteQueue(GlobalConfig.WRITE_QUEUE_CONFIG_PATH);
 		SysObject.initPushQueue(GlobalConfig.PUSH_QUEUE_CONFIG_PATH);
 		SysObject.initMysql(GlobalConfig.MYSQL_CONFIG_PATH);
+		SysObject.initHttpClient(GlobalConfig.HTTP_CLIENT_CONFIG_PATH);
+		
+		SysObject.USER_AUTH_URL = GlobalConfig.USER_AUTH_URL;
+		SysObject.USER_INFO_URL = GlobalConfig.USER_INFO_URL;
+		SysObject.ALLOW_SEND_URL = GlobalConfig.ALLOW_SEND_URL;
 		
 		initFeServerConfig();
 	}

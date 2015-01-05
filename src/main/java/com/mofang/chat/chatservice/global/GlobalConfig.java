@@ -28,4 +28,12 @@ public class GlobalConfig
 	public static String LOG4J_CONFIG_PATH;
 	
 	public static String FESERVER_CONFIG_PATH;
+	
+	public static String HTTP_CLIENT_CONFIG_PATH;
+	
+	public static String USER_AUTH_URL;
+	
+	public static String USER_INFO_URL;
+	
+	public static String ALLOW_SEND_URL;
 }
