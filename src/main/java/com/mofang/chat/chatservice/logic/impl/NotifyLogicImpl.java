@@ -1,18 +1,23 @@
 package com.mofang.chat.chatservice.logic.impl;
 
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.mofang.chat.business.entity.User;
 import com.mofang.chat.business.model.PostReplyNotify;
 import com.mofang.chat.business.model.SysMessageNotify;
 import com.mofang.chat.business.redis.PushQueueRedis;
 import com.mofang.chat.business.redis.impl.PushQueueRedisImpl;
 import com.mofang.chat.business.service.PostReplyNotifyService;
 import com.mofang.chat.business.service.SysMessageNotifyService;
+import com.mofang.chat.business.service.UserService;
 import com.mofang.chat.business.service.impl.PostReplyNotifyServiceImpl;
 import com.mofang.chat.business.service.impl.SysMessageNotifyServiceImpl;
+import com.mofang.chat.business.service.impl.UserServiceImpl;
 import com.mofang.chat.business.sysconf.ResultValue;
 import com.mofang.chat.business.sysconf.ReturnCode;
 import com.mofang.chat.business.sysconf.ReturnCodeHelper;
@@ -33,6 +38,7 @@ public class NotifyLogicImpl implements NotifyLogic
 	private PostReplyNotifyService postReplyNotifyService = PostReplyNotifyServiceImpl.getInstance();
 	private SysMessageNotifyService sysMessageNotifyService = SysMessageNotifyServiceImpl.getInstance();
 	private PushQueueRedis pushRedis = PushQueueRedisImpl.getInstance();
+	private UserService userService = UserServiceImpl.getInstance();
 	
 	private NotifyLogicImpl()
 	{}
@@ -306,6 +312,163 @@ public class NotifyLogicImpl implements NotifyLogic
 		catch(Exception e)
 		{
 			GlobalObject.ERROR_LOG.error("at NotifyLogicImpl.pushTaskNotify throw an error. parameter:" + postData, e);
+			return ReturnCodeHelper.serverError(result);
+		}
+	}
+	
+	/**
+	 * 拉取帖子回复通知
+	 * @param userId
+	 * @return
+	 */
+	public ResultValue getPostReplyNotify(HttpRequestContext context) throws Exception
+	{
+		ResultValue result = new ResultValue();
+		result.setAction("pull_post_reply_notify_response");
+		String postData = context.getPostData();
+		if(StringUtil.isNullOrEmpty(postData))
+		{
+			result.setCode(ReturnCode.CLIENT_REQUEST_DATA_IS_INVALID);
+			return result;
+		}
+		
+		try
+		{
+			JSONObject json = new JSONObject(postData);
+			long userId = json.optLong("uid", 0L);
+			if(0 == userId)
+			{
+				result.setCode(ReturnCode.CLIENT_REQUEST_PARAMETER_FORMAT_ERROR);
+				return result;
+			}
+			
+			long pageNum = json.optLong("page", 1L);
+			long pageSize = json.optLong("size", 10L);
+			long start = (pageNum - 1) * pageSize;
+			
+			JSONArray data = new JSONArray();
+			JSONObject item = null;
+			List<PostReplyNotify> notifies = postReplyNotifyService.getList(userId, start, pageSize);
+			if(null != notifies && notifies.size() > 0)
+			{
+				for(PostReplyNotify notify : notifies)
+				{
+					item = new JSONObject();
+					item.put("notify_id", notify.getNotifyId());
+					item.put("msg_type", notify.getMessageType());
+					JSONObject contentJson = new JSONObject();
+					contentJson.put("post_id", notify.getPostId());
+					contentJson.put("post_title", notify.getPostTitle());
+					contentJson.put("reply_id", notify.getReplyId());
+					contentJson.put("reply_time", notify.getReplyTime().getTime());
+					contentJson.put("reply_type", notify.getReplyType());
+					
+					JSONObject replyContentJson = new JSONObject();
+					replyContentJson.put("text", notify.getReplyText());
+					String replyPictures = notify.getReplyPictures();
+					if(!StringUtil.isNullOrEmpty(replyPictures))
+					{
+						String[] pictures = replyPictures.split(",");
+						JSONArray array = new JSONArray(Arrays.asList(pictures));
+						replyContentJson.put("pictures", array);
+					}
+					contentJson.put("reply_content", replyContentJson);
+					
+					long fromUserId = notify.getReplyUserId();
+					JSONObject userJson = new JSONObject();
+					userJson.put("id", fromUserId);
+					User user = userService.getInfo(fromUserId);
+					if(null != user)
+					{
+						userJson.put("nick_name", user.getNickName());
+						userJson.put("avatar", user.getAvatar());
+						userJson.put("type", user.getType());
+						userJson.put("sex", user.getGender());
+					}
+					
+					contentJson.put("reply_user", userJson);
+					item.put("content", contentJson);
+					item.put("status", notify.getStatus());
+					data.put(item);
+				}
+			}
+			result.setCode(ReturnCode.SUCCESS);
+			result.setData(data);
+			return result;
+		}
+		catch(Exception e)
+		{
+			GlobalObject.ERROR_LOG.error("at NotifyLogicImpl.getPostReplyNotify throw an error. parameter:" + postData, e);
+			return ReturnCodeHelper.serverError(result);
+		}
+	}
+	
+	/**
+	 * 拉取系统消息通知
+	 * @param userId
+	 * @return
+	 */
+	public ResultValue getSysMessageNotify(HttpRequestContext context) throws Exception
+	{
+		ResultValue result = new ResultValue();
+		result.setAction("pull_sys_message_notify_response");
+		String postData = context.getPostData();
+		if(StringUtil.isNullOrEmpty(postData))
+		{
+			result.setCode(ReturnCode.CLIENT_REQUEST_DATA_IS_INVALID);
+			return result;
+		}
+		
+		try
+		{
+			JSONObject json = new JSONObject(postData);
+			long userId = json.optLong("uid", 0L);
+			if(0 == userId)
+			{
+				result.setCode(ReturnCode.CLIENT_REQUEST_PARAMETER_FORMAT_ERROR);
+				return result;
+			}
+			
+			long pageNum = json.optLong("page", 1L);
+			long pageSize = json.optLong("size", 10L);
+			long start = (pageNum - 1) * pageSize;
+			
+			JSONArray data = new JSONArray();
+			JSONObject item = null;
+			List<SysMessageNotify> notifies = sysMessageNotifyService.getList(userId, start, pageSize);
+			if(null != notifies && notifies.size() > 0)
+			{
+				for(SysMessageNotify notify : notifies)
+				{
+					item = new JSONObject();
+					item.put("notify_id", notify.getNotifyId());
+					item.put("msg_type", notify.getMessageType());
+					item.put("msg_category", notify.getMessageCategory());
+					
+					JSONObject contentJson = new JSONObject();
+					contentJson.put("title", notify.getTitle());
+					contentJson.put("detail", notify.getDetail());
+					contentJson.put("timestamp", notify.getCreateTime().getTime());
+					contentJson.put("icon", notify.getIcon());
+					String source = notify.getSource();
+					if(!StringUtil.isNullOrEmpty(source) && !source.equals("{}"))
+					{
+						JSONObject sourceJson = new JSONObject(source);
+						contentJson.put("source", sourceJson);
+					}
+					item.put("content", contentJson);
+					item.put("click_act", notify.getClickAction());
+					item.put("status", notify.getStatus());
+					data.put(item);
+				}
+			}
+			result.setCode(ReturnCode.SUCCESS);
+			result.setData(data);
+			return result;
+		}
+		catch(Exception e)
+		{
+			GlobalObject.ERROR_LOG.error("at NotifyLogicImpl.getSysMessageNotify throw an error. parameter:" + postData, e);
 			return ReturnCodeHelper.serverError(result);
 		}
 	}

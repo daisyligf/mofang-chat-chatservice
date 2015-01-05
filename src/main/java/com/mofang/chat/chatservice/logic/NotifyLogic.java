@@ -17,4 +17,8 @@ public interface NotifyLogic
 	public ResultValue pushGuildGiftNotify(HttpRequestContext context) throws Exception;
 	
 	public ResultValue pushTaskNotify(HttpRequestContext context) throws Exception;
+	
+	public ResultValue getPostReplyNotify(HttpRequestContext context) throws Exception;
+	
+	public ResultValue getSysMessageNotify(HttpRequestContext context) throws Exception;
 }
