@@ -316,6 +316,55 @@ public class NotifyLogicImpl implements NotifyLogic
 		}
 	}
 	
+	@Override
+	public ResultValue pushMedalNotify(HttpRequestContext context) throws Exception
+	{
+		ResultValue result = new ResultValue();
+		result.setAction("push_medal_response");
+		String postData = context.getPostData();
+		if(StringUtil.isNullOrEmpty(postData))
+		{
+			result.setCode(ReturnCode.CLIENT_REQUEST_DATA_IS_INVALID);
+			return result;
+		}
+		
+		try
+		{
+			JSONObject json = new JSONObject(postData);
+			long userId = json.optLong("uid", 0L);
+			if(0 == userId)
+			{
+				result.setCode(ReturnCode.CLIENT_REQUEST_PARAMETER_FORMAT_ERROR);
+				return result;
+			}
+			JSONObject messageJson = json.getJSONObject("msg");
+			if(null == messageJson)
+			{
+				result.setCode(ReturnCode.CLIENT_REQUEST_LOST_NECESSARY_PARAMETER);
+				return result;
+			}
+			
+			///构建push消息
+			JSONObject pushJson = new JSONObject();
+			pushJson.put("push_data_type", PushDataType.USER_MEDAL_NOTIFY);
+			pushJson.put("to_uid", userId);
+			pushJson.put("msg", messageJson);
+			pushJson.put("is_show_notify", json.optBoolean("is_show_notify", false));
+			pushJson.put("click_act", json.optString("click_act", ""));
+			///添加到push queue
+			pushRedis.put(pushJson.toString());
+			GlobalObject.INFO_LOG.info("MedalNotifyWorker add push queue message:" + pushJson.toString());
+			
+			result.setCode(ReturnCode.SUCCESS);
+			return result;
+		}
+		catch(Exception e)
+		{
+			GlobalObject.ERROR_LOG.error("at NotifyLogicImpl.pushMedalNotify throw an error. parameter:" + postData, e);
+			return ReturnCodeHelper.serverError(result);
+		}
+	}
+	
 	/**
 	 * 拉取帖子回复通知
 	 * @param userId
