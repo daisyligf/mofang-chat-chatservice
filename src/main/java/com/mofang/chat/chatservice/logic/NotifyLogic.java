@@ -20,7 +20,13 @@ public interface NotifyLogic
 	
 	public ResultValue pushMedalNotify(HttpRequestContext context) throws Exception;
 	
+	public ResultValue pushFeedRecommendNotify(HttpRequestContext context) throws Exception;
+	
 	public ResultValue getPostReplyNotify(HttpRequestContext context) throws Exception;
 	
 	public ResultValue getSysMessageNotify(HttpRequestContext context) throws Exception;
+	
+	public ResultValue getFeedRecommendNotify(HttpRequestContext context) throws Exception;
+	
+	public ResultValue getUnreadCount(HttpRequestContext context) throws Exception;
 }

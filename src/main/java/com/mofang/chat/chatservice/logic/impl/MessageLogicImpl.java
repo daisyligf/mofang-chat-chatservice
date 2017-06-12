@@ -9,15 +9,19 @@ import org.json.JSONObject;
 import com.mofang.chat.business.sysconf.ResultValue;
 import com.mofang.chat.business.entity.FriendMessage;
 import com.mofang.chat.business.entity.PrivateMessage;
+import com.mofang.chat.business.entity.PrivateMessageCollection;
 import com.mofang.chat.business.entity.RoomMessage;
+import com.mofang.chat.business.entity.User;
 import com.mofang.chat.business.redis.PushQueueRedis;
 import com.mofang.chat.business.redis.impl.PushQueueRedisImpl;
 import com.mofang.chat.business.service.FriendMessageService;
 import com.mofang.chat.business.service.PrivateMessageService;
 import com.mofang.chat.business.service.RoomMessageService;
+import com.mofang.chat.business.service.UserService;
 import com.mofang.chat.business.service.impl.FriendMessageServiceImpl;
 import com.mofang.chat.business.service.impl.PrivateMessageServiceImpl;
 import com.mofang.chat.business.service.impl.RoomMessageServiceImpl;
+import com.mofang.chat.business.service.impl.UserServiceImpl;
 import com.mofang.chat.business.sysconf.ReturnCode;
 import com.mofang.chat.business.sysconf.ReturnCodeHelper;
 import com.mofang.chat.business.sysconf.common.ChatType;
@@ -41,6 +45,7 @@ public class MessageLogicImpl implements MessageLogic
 	private RoomMessageService roomMessageService = RoomMessageServiceImpl.getInstance();
 	private PrivateMessageService privateMessageService = PrivateMessageServiceImpl.getInstance();
 	private PushQueueRedis pushRedis = PushQueueRedisImpl.getInstance();
+	private UserService userService = UserServiceImpl.getInstance();
 	
 	private MessageLogicImpl()
 	{}
@@ -147,6 +152,70 @@ public class MessageLogicImpl implements MessageLogic
 		}
 	}
 
+	public ResultValue pullPrivateNotify(HttpRequestContext context) throws Exception
+	{
+		ResultValue result = new ResultValue();
+		result.setAction("pull_private_notify_response");
+		String postData = context.getPostData();
+		if(StringUtil.isNullOrEmpty(postData))
+		{
+			result.setCode(ReturnCode.CLIENT_REQUEST_DATA_IS_INVALID);
+			return result;
+		}
+		
+		try
+		{
+			JSONObject json = new JSONObject(postData);
+			long userId = json.optLong("uid", 0L);
+			if(0L == userId)
+			{
+				result.setCode(ReturnCode.CLIENT_REQUEST_DATA_IS_INVALID);
+				return result;
+			}
+			
+			JSONArray data = new JSONArray();
+			JSONObject item = null;
+			List<PrivateMessage> messages = privateMessageService.getPullNotify(userId);
+			if(null != messages && messages.size() > 0)
+			{
+				long fromUserId = 0;
+				for(PrivateMessage message : messages)
+				{
+					fromUserId = message.getFromUserId();
+					item = new JSONObject();
+					item.put("target_id", userId);
+					item.put("unread_count", message.getUnreadCount());
+					item.put("is_show_notify", message.isShowNotify());
+					item.put("click_act", message.getClickAction());
+					JSONObject msgJson = new JSONObject();
+					msgJson.put("content", message.getContent());
+					msgJson.put("msg_type", message.getMessageType());
+					msgJson.put("time_stamp", message.getTimeStamp());
+					JSONObject userJson = new JSONObject();
+					userJson.put("id", fromUserId);
+					User user = userService.getInfo(fromUserId);
+					if(null != user)
+					{
+						userJson.put("nick_name", user.getNickName());
+						userJson.put("avatar", user.getAvatar());
+						userJson.put("type", user.getType());
+					}
+					msgJson.put("user", userJson);
+					item.put("msg", msgJson);
+					data.put(item);
+				}
+			}
+			result.setData(data);
+			result.setCode(ReturnCode.SUCCESS);
+			return result;
+		}
+		catch(Exception e)
+		{
+			GlobalObject.ERROR_LOG.error("at MessageLogicImpl.pullPrivateNotify throw an error. parameter:" + postData, e);
+			return ReturnCodeHelper.serverError(result);
+		}
+	}
+	
 	@Override
 	public ResultValue sendGroupSendMessage(HttpRequestContext context) throws Exception
 	{
@@ -322,6 +391,130 @@ public class MessageLogicImpl implements MessageLogic
 		catch(Exception e)
 		{
 			GlobalObject.ERROR_LOG.error("at MessageLogicImpl.pushRoomNotify throw an error. parameter:" + postData, e);
+			return ReturnCodeHelper.serverError(result);
+		}
+	}
+
+	@Override
+	public ResultValue pullPrivateMessage(HttpRequestContext context) throws Exception
+	{
+		ResultValue result = new ResultValue();
+		result.setAction("pull_private_message_response");
+		String postData = context.getPostData();
+		if(StringUtil.isNullOrEmpty(postData))
+		{
+			result.setCode(ReturnCode.CLIENT_REQUEST_DATA_IS_INVALID);
+			return result;
+		}
+		
+		try
+		{
+			JSONObject json = new JSONObject(postData);
+			long userId = json.optLong("uid", 0L);
+			long fromUserId = json.optLong("target_id", 0L);
+			
+			if(0L == userId || 0L == fromUserId)
+			{
+				result.setCode(ReturnCode.CLIENT_REQUEST_PARAMETER_FORMAT_ERROR);
+				return result;
+			}
+			
+			Long minMsgId = json.optLong("msg_id_min", 0L);
+			Long maxMsgId = json.optLong("msg_id_max", Long.MAX_VALUE);
+			Integer pageSize = json.optInt("page_size", 50);
+			
+			///返回聊天消息列表
+			JSONObject data = new JSONObject();
+			PrivateMessageCollection msgCollection = privateMessageService.getPullMessages(fromUserId, userId, minMsgId, maxMsgId, pageSize);
+			if(null != msgCollection)
+			{
+				data.put("msg_count", msgCollection.getCount());
+				JSONArray array = new JSONArray();
+				JSONObject item = null;
+				List<PrivateMessage> messages = msgCollection.getMessage();
+				if(null != messages && messages.size() > 0)
+				{
+					for(PrivateMessage message : messages)
+					{
+						item = new JSONObject();
+						item.put("msg_id", message.getMessageId());
+						item.put("content", message.getContent());
+						item.put("msg_type", message.getMessageType());
+						item.put("time_stamp", message.getTimeStamp());
+						item.put("duration", message.getDuration());
+						///构建消息发送者用户信息
+						JSONObject userJson = new JSONObject();
+						userJson.put("id", message.getFromUserId());
+						User user = userService.getInfo(message.getFromUserId());
+						if(null != user)
+						{
+							userJson.put("nick_name", user.getNickName());
+							userJson.put("avatar", user.getAvatar());
+							userJson.put("type", user.getType());
+						}
+						item.put("user", userJson);
+						array.put(item);
+					}
+				}
+				data.put("msg_list", array);
+			}
+			result.setData(data);
+			result.setCode(ReturnCode.SUCCESS);
+			return result;
+		}
+		catch(Exception e)
+		{
+			GlobalObject.ERROR_LOG.error("at MessageLogicImpl.pullPrivateMessage throw an error. parameter:" + postData, e);
+			return ReturnCodeHelper.serverError(result);
+		}
+	}
+
+	@Override
+	public ResultValue sendPrivateMessage(HttpRequestContext context) throws Exception
+	{
+		ResultValue result = new ResultValue();
+		result.setAction("send_private_message_response");
+		String postData = context.getPostData();
+		if(StringUtil.isNullOrEmpty(postData))
+		{
+			result.setCode(ReturnCode.CLIENT_REQUEST_DATA_IS_INVALID);
+			return result;
+		}
+		
+		try
+		{
+			JSONObject json = new JSONObject(postData);
+			long toUserId = json.optLong("to_uid", 0);
+			long fromUserId = json.optLong("from_uid", 0);
+			
+			if(0 == fromUserId || 0 == toUserId)
+			{
+				result.setCode(ReturnCode.CLIENT_REQUEST_PARAMETER_FORMAT_ERROR);
+				return result;
+			}
+			
+			///构建消息实体
+			PrivateMessage message = new PrivateMessage();
+			message.setToUserId(toUserId);
+			message.setFromUserId(fromUserId);
+			message.setContent(json.optString("content", ""));
+			message.setMessageType(json.optInt("msg_type", MessageType.TEXT));
+			message.setDuration(json.optInt("duration", 0));
+			message.setChatType(ChatType.PRIVATE);
+			message.setShowNotify(json.optBoolean("is_show_notify", false));
+			message.setClickAction(json.optString("click_act", ""));
+			message.setTimeStamp(System.currentTimeMillis());
+			message.setExpireTime(MESSAGE_EXPIRE_TIME);  ///永不过期
+			long messageId = privateMessageService.sendMessage(message);
+			JSONObject data = new JSONObject();
+			data.put("msg_id", messageId);
+			result.setData(data);
+			result.setCode(ReturnCode.SUCCESS);
+			return result;
+		}
+		catch(Exception e)
+		{
+			GlobalObject.ERROR_LOG.error("at MessageLogicImpl.sendPrivateMessage throw an error. parameter:" + postData, e);
 			return ReturnCodeHelper.serverError(result);
 		}
 	}

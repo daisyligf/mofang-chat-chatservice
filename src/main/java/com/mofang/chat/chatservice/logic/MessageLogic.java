@@ -35,6 +35,14 @@ public interface MessageLogic
 	public ResultValue pullRoomNotify(HttpRequestContext context) throws Exception;
 	
 	/**
+	 * 拉取私聊通知
+	 * @param context
+	 * @return
+	 * @throws Exception
+	 */
+	public ResultValue pullPrivateNotify(HttpRequestContext context) throws Exception;
+	
+	/**
 	 * 推送公聊活动通知
 	 * @param context
 	 * @return
@@ -57,4 +65,20 @@ public interface MessageLogic
 	 * @throws Exception
 	 */
 	public ResultValue deleteRoomMessage(HttpRequestContext context) throws Exception;
+	
+	/**
+	 * 拉取私聊消息
+	 * @param context
+	 * @return
+	 * @throws Exception
+	 */
+	public ResultValue pullPrivateMessage(HttpRequestContext context) throws Exception;
+	
+	/**
+	 * 发送私聊消息
+	 * @param context
+	 * @return
+	 * @throws Exception
+	 */
+	public ResultValue sendPrivateMessage(HttpRequestContext context) throws Exception;
 }
